@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-# Version: 0.9.7
+# Version: 1.0
 # Author: Miguel Seridonio Almeida Fernandes
 
 

@@ -18,7 +18,7 @@ import sys
 import Access
 import Trail
 from models_setup import model_country, model_age, model_gender
-from models_setup import model_day, model_month, model_year
+from models_setup import model_day, model_month, model_year, model_rating
 
 
 ABOUT = """
@@ -27,6 +27,7 @@ Version: 0.9.2
 Author: Miguel Seridoneo
 """
 ACCESS_FILE = "accounts.txt"
+TRAIL_FILE = "trails.txt"
 
 LOGGIN_IN = [
         "Logging in.",
@@ -101,8 +102,8 @@ class Window(Gtk.ApplicationWindow):
                             margin_bottom=64,
                             )
 
-        trail = Trail.Trail("text.txt")
-        trail_rows = trail.get_trails()
+        self.trail = Trail.Trail(TRAIL_FILE)
+        trail_rows = self.trail.get_trails()
 
         r = 0
         for i in trail_rows:
@@ -163,12 +164,20 @@ class Window(Gtk.ApplicationWindow):
         u_experience_button.connect("clicked", self.trail_experience_input, u_show_button)
         u_recomendation_button = Gtk.Button(label="Trail Recomendation")
         u_recomendation_button.connect("clicked", self.trail_recomendation, u_show_button)
-        u_back_button = Gtk.Button(label="Logout")
+        u_report_button = Gtk.Button(label="Trails Report")
+        u_report_button.connect("clicked", self.trail_report, u_show_button)
+        u_back_button = Gtk.Button(label="Logout", halign=3)
         u_back_button.connect("clicked", self.main_menu)
-        user_menu.attach(u_show_button, 0, 0, 1, 1)
-        user_menu.attach(u_experience_button, 1, 0, 1, 1)
-        user_menu.attach(u_recomendation_button, 2, 0, 1, 1)
-        user_menu.attach(u_back_button, 1, 1, 1, 1)
+        top_grid = Gtk.Grid(column_spacing=16,
+                        halign=3,
+                        column_homogeneous=True,
+                        )
+        top_grid.attach(u_show_button, 0, 0, 1, 1)
+        top_grid.attach(u_experience_button, 1, 0, 1, 1)
+        top_grid.attach(u_recomendation_button, 2, 0, 1, 1)
+        top_grid.attach(u_report_button, 3, 0, 1, 1)
+        user_menu.attach(top_grid, 0, 0, 1, 1)
+        user_menu.attach(u_back_button, 0, 1, 1, 1)
         self.grid.remove(self.l)
         self.grid.attach(user_menu, 0, 1, 1, 1)
         self.grid.show_all()
@@ -213,57 +222,58 @@ class Window(Gtk.ApplicationWindow):
         parent.set_label(SHOW_LABEL[0])
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)
-        experience_grid = Gtk.Grid(halign=3)
+
         trail_grid = Gtk.Grid(halign=3)
-        day_of_visit = Gtk.ComboBox(width_chars=3,
-                            max_length=2,
-                            placeholder_text="dd",
-                            hexpand=False
-                            )
-        month_of_visit = Gtk.ComboBox(width_chars=3,
-                            max_length=2,
-                            placeholder_text="mm",
-                            )
-        year_of_visit = Gtk.ComboBox(width_chars=2,
-                            max_length=2,
-                            placeholder_text="yy",
-                            )
-        date_label = Gtk.Label(label="Date:",
-                            margin_right=6,
-                            )
-        rating = Gtk.ComboBox(width_chars=2,
-                        max_length=1,
-                        )
+        cell = Gtk.CellRendererText()
+        rating = Gtk.ComboBox.new_with_model(model_rating)
+        rating.pack_start(cell, True)
+        rating.add_attribute(cell, "text", 0)
         rating_label = Gtk.Label(label="Rating:",
                                 margin_right=6,
                                 margin_left=10,
                                 )
-        trail = Gtk.ComboBox(width_chars=22,
-                        max_length=20,
-                        halign=3,
-                        )
+        #model_trail
+        model_trail = Gtk.ListStore(str)
+        d = self.trail.get_trails()
+        for i in d:
+            model_trail.append([i])
+
+        trail = Gtk.ComboBox.new_with_model(model_trail)
+        trail.pack_start(cell, True)
+        trail.add_attribute(cell, "text", 0)
         trail_label = Gtk.Label(label="Trail:",
                             margin_right=6,
                             )
         trail_grid.attach(trail_label, 0, 0, 1, 1)
         trail_grid.attach(trail, 1, 0, 1, 1)
-        experience_grid.attach(date_label, 0, 1, 1, 1)
-        experience_grid.attach(day_of_visit, 1, 1, 1, 1)
-        experience_grid.attach(month_of_visit, 2, 1, 1, 1)
-        experience_grid.attach(year_of_visit, 3, 1, 1, 1)
-        experience_grid.attach(rating_label, 4, 1, 1, 1)
-        experience_grid.attach(rating, 5, 1, 1, 1)
+        trail_grid.attach(rating_label, 2, 0, 1, 1)
+        trail_grid.attach(rating, 3, 0, 1, 1)
+        calendar = Gtk.Calendar()
+        submit_b = Gtk.Button(label="Submit", halign=3)
+        submit_b.connect("clicked", self.submit_trail_experience)
         holder_grid = Gtk.Grid(halign=3,
-                            row_spacing = 16,
-                            margin_bottom=16,
+                            row_spacing =16,
+                            margin_bottom=32,
                             )
         holder_grid.attach(trail_grid, 0, 0, 1, 1)
-        holder_grid.attach(experience_grid, 0, 1, 1, 1)
+        holder_grid.attach(calendar, 0, 1, 1, 1)
+        holder_grid.attach(submit_b, 0, 2, 1, 1)
         self.grid.attach(holder_grid, 0, 2, 1, 1)
         self.grid.show_all()
 
 
+    def submit_trail_experience(self, parent):
+        
+        pass
+
+
     def trail_recomendation(self, par, parent):
+        parent.set_label(SHOW_LABEL[0])
+        while(self.grid.get_child_at(0, 2) != None):
+            self.grid.remove_row(2)
+
+
+    def trail_report(self, par, parent):
         parent.set_label(SHOW_LABEL[0])
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)

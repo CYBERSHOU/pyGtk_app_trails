@@ -14,9 +14,12 @@ model_gender = Gtk.ListStore(str)
 model_day = Gtk.ListStore(str)
 model_month = Gtk.ListStore(str)
 model_year = Gtk.ListStore(str)
+model_rating = Gtk.ListStore(str)
 
+for i in range(1, 6):
+    model_rating.append([str(i)])
 
-for i in range(1, 31):
+for i in range(1, 32):
     if i < 10:
         model_day.append(["0"+str(i)])
     else:

@@ -195,13 +195,13 @@ class Trail:
             return self.d
         except Exception:
             f = open(self.file_path, 'w')
-            for i in HEADER:
+            for i in HEADERS:
                 f.write(i+';')
             f.close()
             n_d = {}
             for i in range(len(HEADERS)):
                 n_d[HEADERS[i]] = COL_HEADER[i]
-            d_header = {"header": HEADER}
+            d_header = {"header": HEADERS}
             return d_header
 
     def set_file_trails(self):
