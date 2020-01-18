@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 
-# Version: 0.9.4
+# Version: 0.9.7
 # Authors: Miguel Seridonio Almeida Fernandes,
-#       Isaac Silva,
+#       Isaac Slva,
 #       Andre Pacheco
 
 
@@ -17,6 +17,7 @@ import sys
 
 import Access
 import Trail
+from model_country import model_country, model_age, model_gender
 
 
 ABOUT = """
@@ -134,7 +135,6 @@ class Window(Gtk.ApplicationWindow):
         self.grid.attach(self.login_grid, 0, 2, 1, 1)
 
         self.log = Access.Access("access.txt")
-        self.tid = None
         self.add(self.grid)
 
     def main_menu(self, parent):
@@ -142,7 +142,7 @@ class Window(Gtk.ApplicationWindow):
             self.grid.remove_row(1)
         self.grid.attach(self.grid2, 0, 1, 1, 1)
         self.grid.attach(self.login_grid, 0, 2, 1, 1)
-        self.resize
+        self.resize(450, 300)
         self.grid.show_all()
 
 
@@ -270,18 +270,30 @@ class Window(Gtk.ApplicationWindow):
     def create_acc(self, parent):
         while(self.grid.get_child_at(0, 1) != None):
             self.grid.remove_row(1)
+        #labels
         user_label = Gtk.Label(label="Username:")
         pass_label = Gtk.Label(label="Password:")
         ck_pass_label = Gtk.Label(label="Confirm Password:")
         country_label = Gtk.Label(label="Country:")
         gender_label = Gtk.Label(label="Gender:")
         age_range_label = Gtk.Label(label="Age Range:")
+        #entries
         user_entry = Gtk.Entry()
         pass_entry = Gtk.Entry(visibility=False)
         ck_pass_entry = Gtk.Entry(visibility=False)
-        country_cbox = Gtk.ComboBox()
-        gender_cbox = Gtk.ComboBox()
-        age_range_cbox = Gtk.ComboBox()
+        #comboboxes
+        country_cbox = Gtk.ComboBox.new_with_model(model_country)
+        gender_cbox = Gtk.ComboBox.new_with_model(model_gender)
+        age_range_cbox = Gtk.ComboBox.new_with_model(model_age)
+        #setting up comboboxes CellRendererText
+        cell = Gtk.CellRendererText()
+        country_cbox.pack_start(cell, True)
+        country_cbox.add_attribute(cell, 'text', 0)
+        gender_cbox.pack_start(cell, True)
+        gender_cbox.add_attribute(cell, 'text', 0)
+        age_range_cbox.pack_start(cell, True)
+        age_range_cbox.add_attribute(cell, 'text', 0)
+        #labels, entries, comboboxes grid
         create_acc_grid = Gtk.Grid(halign=3,
                                 row_spacing=16,
                                 column_spacing=12,
@@ -298,7 +310,9 @@ class Window(Gtk.ApplicationWindow):
         create_acc_grid.attach(country_cbox, 1, 3, 1, 1)
         create_acc_grid.attach(gender_cbox, 1, 4, 1, 1)
         create_acc_grid.attach(age_range_cbox, 1, 5, 1, 1)
+        #title
         create_acc_label = Gtk.Label(label="Create Account")
+
         confirm_submission = Gtk.Button(label="Submit",
                                         halign=3,
                                         )
@@ -307,11 +321,17 @@ class Window(Gtk.ApplicationWindow):
                                                                 ck_pass_entry,
                                                                 country_cbox,
                                                                 gender_cbox,
-                                                                age_range_cbox])
+                                                                age_range_cbox,
+                                                                ])
         back_b = Gtk.Button(label="Back",
                             halign=3,
                             )
         back_b.connect("clicked", self.main_menu)
+        b_grid = Gtk.Grid(halign=3,
+                        column_spacing=12,
+                        )
+        b_grid.attach(confirm_submission, 0, 0, 1, 1)
+        b_grid.attach(back_b, 1, 0, 1, 1)
         c_a_grid = Gtk.Grid(halign=3,
                         row_spacing=32,
                         column_homogeneous=True,
@@ -319,11 +339,6 @@ class Window(Gtk.ApplicationWindow):
                         margin_left=32,
                         margin_bottom=48,
                         )
-        b_grid = Gtk.Grid(halign=3,
-                            column_spacing=12,
-                            )
-        b_grid.attach(confirm_submission, 0, 0, 1, 1)
-        b_grid.attach(back_b, 1, 0, 1, 1)
         c_a_grid.attach(create_acc_label, 0, 0, 1, 1)
         c_a_grid.attach(create_acc_grid, 0, 1, 1, 1)
         c_a_grid.attach(b_grid, 0, 2, 1, 1)
@@ -333,17 +348,20 @@ class Window(Gtk.ApplicationWindow):
 
     def submit_acc(self, parent, widgets:list):
         u, p, ck_p, c, g, a = widgets[0], widgets[1], widgets[2], widgets[3], widgets[4], widgets[5]
-        status = self.log.create_acc_gtk([u.text, p.text, ck_p.text, c.text, g.text, a.text])
-        if status != 0:
-            pass
-        else:
-            pop = Gtk.Popover()
-            pop.set_relative_to(parent)
-            pop.add(Gtk.Label(label="Incorrect Login!"))
-            pop.show_all()
-            pop.popup()
-
-            pass
+        pop = Gtk.Popover()
+        pop.set_relative_to(parent)
+        status = self.log.create_acc_gtk([
+            u.get_text(),
+            p.get_text(),
+            ck_p.get_text(),
+            model_country[c.get_active()][0],
+            model_gender[g.get_active()][0],
+            model_age[a.get_active()][0]
+            ])
+        pop.add(Gtk.Label(label=status))
+        pop.show_all()
+        pop.popup()
+        self.t_pop = GLib.timeout_add(1500, self.pop_down, pop)
 
 
     def login(self, parent):
