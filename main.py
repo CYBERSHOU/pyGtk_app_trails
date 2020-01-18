@@ -17,7 +17,8 @@ import sys
 
 import Access
 import Trail
-from model_country import model_country, model_age, model_gender
+from models_setup import model_country, model_age, model_gender
+from models_setup import model_day, model_month, model_year
 
 
 ABOUT = """
@@ -25,7 +26,7 @@ License: GPL
 Version: 0.9.2
 Author: Miguel Seridoneo
 """
-ACCESS_FILE = "access.txt"
+ACCESS_FILE = "accounts.txt"
 
 LOGGIN_IN = [
         "Logging in.",
@@ -134,10 +135,12 @@ class Window(Gtk.ApplicationWindow):
         self.grid.attach(self.grid2, 0, 1, 1, 1)
         self.grid.attach(self.login_grid, 0, 2, 1, 1)
 
-        self.log = Access.Access("access.txt")
+        self.log = Access.Access(ACCESS_FILE)
         self.add(self.grid)
 
     def main_menu(self, parent):
+        self.user_entry.set_text("")
+        self.pass_entry.set_text("")
         while(self.grid.get_child_at(0, 1) != None):
             self.grid.remove_row(1)
         self.grid.attach(self.grid2, 0, 1, 1, 1)
@@ -217,7 +220,6 @@ class Window(Gtk.ApplicationWindow):
                             placeholder_text="dd",
                             hexpand=False
                             )
-        #change to ComboBox
         month_of_visit = Gtk.ComboBox(width_chars=3,
                             max_length=2,
                             placeholder_text="mm",
@@ -268,6 +270,7 @@ class Window(Gtk.ApplicationWindow):
 
 
     def create_acc(self, parent):
+        #cleanup
         while(self.grid.get_child_at(0, 1) != None):
             self.grid.remove_row(1)
         #labels
@@ -361,7 +364,7 @@ class Window(Gtk.ApplicationWindow):
         pop.add(Gtk.Label(label=status))
         pop.show_all()
         pop.popup()
-        self.t_pop = GLib.timeout_add(1500, self.pop_down, pop)
+        self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
 
 
     def login(self, parent):
@@ -385,7 +388,7 @@ class Window(Gtk.ApplicationWindow):
             self.user_entry.set_text("")
             print(self.log.get_u_pass())
             self.tid = GLib.timeout_add(300, self.loggin_in, parent)
-            if self.log.logged_in == "admin":
+            if self.log.get_logged_user() == "admin":
                 self.t_admin = GLib.timeout_add(1600, self.admin_win, parent)
             else:
                 self.t_user = GLib.timeout_add(1600, self.user_win, parent)
