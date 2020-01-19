@@ -17,8 +17,7 @@ import sys
 
 import Access
 import Trail
-from models_setup import model_country, model_age, model_gender
-from models_setup import model_day, model_month, model_year, model_rating
+from models_setup import model_country, model_age, model_gender, model_rating
 
 
 ABOUT = """
@@ -250,7 +249,7 @@ class Window(Gtk.ApplicationWindow):
         trail_grid.attach(rating, 3, 0, 1, 1)
         calendar = Gtk.Calendar()
         submit_b = Gtk.Button(label="Submit", halign=3)
-        submit_b.connect("clicked", self.submit_trail_experience)
+        submit_b.connect("clicked", self.submit_trail_experience, [trail, rating, calendar])
         holder_grid = Gtk.Grid(halign=3,
                             row_spacing =16,
                             margin_bottom=32,
@@ -262,21 +261,59 @@ class Window(Gtk.ApplicationWindow):
         self.grid.show_all()
 
 
-    def submit_trail_experience(self, parent):
-        
-        pass
+    def submit_trail_experience(self, parent, widgets:list):
+        t, r, c = widgets[0], widgets[1], widgets[2]
+        pop = Gtk.Popover()
+        pop.set_relative_to(parent)
+        if t.get_active() == -1 or r.get_active() == -1:
+            pop.add(Gtk.Label(label="Fill all parameters."))
+            pop.show_all()
+            pop.popup()
+            self.t_pop = Gtk.GLib.timeout_add(3000, self.pop_down, pop)
+            return
+        y, m, d = c.get_date()
+        m += 1
+        if d < 10:
+            d = '0'+str(d)
+        else:
+            d = str(d)
+        if m < 10:
+            m = '0'+str(m)
+        else:
+            m = str(m)
+        y = str(y)
+        date = d+'/'+m+'/'+y
+        print(date)
+        #status = self.visit.create_visit(model_trail[t.get_active()][0],
+        #        [
+        #        self.log.get_logged_user(),
+        #        self.log.get_cty(),
+        #        self.log.get_gdr(),
+        #        self.log.get_age(),
+        #        date,
+        #        model_rating[r.get_active()][0],
+        #        ])
+        # pop.add(Gtk.Label(label=status))
+        # pop.show_all()
+        # pop.popup()
+        # self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
 
 
     def trail_recomendation(self, par, parent):
         parent.set_label(SHOW_LABEL[0])
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)
+        rec = Recomend.Recomend()
+        t = rec.get_rec()
+        new_recomendation = Gtk.Label(label=t)
+        self.grid.attach(new_recomendation, 0, 2, 1, 1)
 
 
     def trail_report(self, par, parent):
         parent.set_label(SHOW_LABEL[0])
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)
+        trail_cb = Gtk.ComboBox.new_with_model(model_trail)
 
 
     def create_acc(self, parent):
@@ -363,6 +400,12 @@ class Window(Gtk.ApplicationWindow):
         u, p, ck_p, c, g, a = widgets[0], widgets[1], widgets[2], widgets[3], widgets[4], widgets[5]
         pop = Gtk.Popover()
         pop.set_relative_to(parent)
+        if c.get_active() == -1 or g.get_active() == -1 or a.get_active() == -1:
+            pop.add(Gtk.Label(label="Fill all parameters."))
+            pop.show_all()
+            popup()
+            self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
+            return
         status = self.log.create_acc_gtk([
             u.get_text(),
             p.get_text(),
