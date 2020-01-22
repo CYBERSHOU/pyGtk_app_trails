@@ -10,12 +10,16 @@ class Report:
         self.classificacao_entrada = classificacao
         self.num_visitas = len(classificacao)
         self.classificacao_max = 0
-        self.classificacao_min = 5
+        if self.num_visitas == 0:
+            self.classificacao_min = 0
+        else:
+            self.classificacao_min = 5
         self.moda = 0
 
         #percorre a lista de classificações e obtem a classificação maxima e minima
         dic_temp = {}
         for i in classificacao:
+            i = int(i)
             if self.classificacao_max < i:
                 self.classificacao_max = i
             if self.classificacao_min > i:
@@ -50,13 +54,3 @@ class Report:
         return self.moda
 
 
-# def main():
-#     classificacoes = [1,2,3,1,2,4,2,3,2,3,4]
-#     teste = Report(classificacoes)
-
-#     print(teste.get_classificacao_max())
-#     print(teste.get_classificacao_min())
-#     print(teste.get_num_visitas())
-#     print(teste.get_moda())
-
-# main()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
+#row
 NAME = "Name"
 ISLE = "Isle"
 CNTY = "County"
@@ -13,6 +13,7 @@ DESC = "Description"
 
 COL_HEADER = [NAME, ISLE, CNTY, GPS, DFCT, EXTN, FORM, DESC]
 
+#keys
 HEADERS = [
         "name",
         "isle",

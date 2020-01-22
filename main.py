@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-# Version: 0.9.8
+# Version: 1.0
 # Authors: Miguel Seridonio Almeida Fernandes,
 #       Isaac Sousa,
 #       Andre Pacheco
@@ -27,12 +27,13 @@ from models_setup import model_dificulty, model_extension, model_form, COUNTIES
 
 ABOUT = """
 License: GPL
-Version: 0.9.8
-Author: Miguel Seridoneo
+Version: 1.0
+Author: Miguel Seridónio
 """
 
 ACCESS_FILE = "files/accounts.txt"
 TRAIL_FILE = "files/trails.txt"
+VISIT_FILE = "files/visits.txt"
 
 LOGGIN_IN = [
         "Logging in.",
@@ -99,15 +100,19 @@ class Window(Gtk.ApplicationWindow):
                             column_spacing=16,
                             halign=3,
                             # column_homogeneous=True,
-                            margin_left=64,
-                            margin_right=64,
-                            margin_bottom=64,
                             )
+        self.scroll_window = Gtk.ScrolledWindow(vexpand=True,
+                                        hexpand=True,
+                                        margin_right=64,
+                                        margin_left=64,
+                                        margin_bottom=64,
+                                        min_content_height=200,
+                                        )
 
+        self.scroll_window.add(self.trails_table)
         self.update_model_trail()
         self.model_county = model_county
         self.log = Access.Access(ACCESS_FILE)
-        self.visit = Visit.Visit()
 
         self.login_b = Gtk.Button(label="Login", hexpand=True, halign=3, margin_bottom=64)
         self.login_b.connect("clicked", self.login)
@@ -146,12 +151,14 @@ class Window(Gtk.ApplicationWindow):
 
 
     def user_win(self, parent):
+        #creating visit
+        self.visit = Visit.Visit(VISIT_FILE, self.trail.get_trails_d())
         user_menu = Gtk.Grid(row_spacing=16,
                             column_spacing=16,
                             halign=3,
                             column_homogeneous=True,
-                            margin_right=32,
-                            margin_left=32,
+                            margin_right=64,
+                            margin_left=64,
                             )
         u_show_button = Gtk.Button(label="Show Trails")
         u_show_button.connect("clicked", self.show_trails)
@@ -182,6 +189,8 @@ class Window(Gtk.ApplicationWindow):
     def admin_win(self, parent):
         admin_menu = Gtk.Grid(row_spacing=16,
                             halign=3,
+                            margin_right=64,
+                            margin_left=64,
                             )
         manage_grid = Gtk.Grid(halign=3,
                             column_spacing=16,
@@ -204,7 +213,7 @@ class Window(Gtk.ApplicationWindow):
         admin_menu.attach(a_back_button, 0, 1, 1, 1)
         self.grid.remove(self.l)
         self.grid.attach(admin_menu, 0, 1, 1, 1)
-        self.grid.attach(self.trails_table, 0, 2, 1, 1)
+        self.grid.attach(self.scroll_window, 0, 2, 1, 1)
         self.grid.show_all()
         return False
 
@@ -326,11 +335,11 @@ class Window(Gtk.ApplicationWindow):
 
     def change_county_cbox(self, parent, widgets):
         c, i = widgets[0], widgets[1]
-        i = model_isle[i.get_active()][0]
-        l = COUNTIES[ISLES[i]]
+        m_i = model_isle[i.get_active()][0]
+        l = COUNTIES[ISLES[m_i]]
         self.model_county = Gtk.ListStore(str)
-        for i in l:
-            self.model_county.append([i])
+        for itr in l:
+            self.model_county.append([itr])
         c.set_model(self.model_county)
         c.set_active(-1)
 
@@ -432,7 +441,7 @@ class Window(Gtk.ApplicationWindow):
         ext_cbox.add_attribute(cell, "text", 0)
         form_cbox.pack_start(cell, True)
         form_cbox.add_attribute(cell, "text", 0)
-        isle_cbox.connect("changed", self.change_county_cbox, [county_cbox, isle_cbox])
+        self.isle_handler_id = isle_cbox.connect("changed", self.change_county_cbox, [county_cbox, isle_cbox])
         trail_cbox.connect("changed", self.modify_unset_sensitive, [trail_cbox,
                                                                 isle_cbox,
                                                                 county_cbox,
@@ -441,7 +450,8 @@ class Window(Gtk.ApplicationWindow):
                                                                 ext_cbox,
                                                                 form_cbox,
                                                                 desc_entry
-                                                                ])
+                                                                ],
+                                                                )
         modify_grid.attach(trail_label, 0, 0, 1, 1)
         modify_grid.attach(trail_cbox, 1, 0, 1, 1)
         modify_grid.attach(isle_label, 0, 1, 1, 1)
@@ -509,19 +519,52 @@ class Window(Gtk.ApplicationWindow):
         df, e, f, desc = w[4], w[5], w[6], w[7]
         if t.get_active() == -1:
             return
+        current_trail = self.model_trail[t.get_active()][0]
+        trails_d = self.trail.get_trails_d()
+        itr = 0
         i.set_sensitive(True)
+        for cnt in model_isle:
+            if trails_d[current_trail]["isle"] == cnt[0]:
+                i.handler_block(self.isle_handler_id)
+                i.set_active(itr)
+                i.handler_unblock(self.isle_handler_id)
+            itr += 1
+        self.change_county_cbox(parent, [i, c])
         c.set_sensitive(True)
+        itr = 0
+        for cnt in model_county:
+            if trails_d[current_trail]["county"] == cnt[0]:
+                c.set_active(itr)
+            itr += 1
         g.set_sensitive(True)
+        g.set_text(trails_d[current_trail]["gps"])
         df.set_sensitive(True)
+        itr = 0
+        for cnt in model_dificulty:
+            if trails_d[current_trail]["dif"] == cnt[0]:
+                df.set_active(itr)
+            itr += 1
         e.set_sensitive(True)
+        itr = 0
+        for cnt in model_extension:
+            if trails_d[current_trail]["ext"] == cnt[0]:
+                e.set_active(itr)
+            itr += 1
         f.set_sensitive(True)
+        itr = 0
+        for cnt in model_form:
+            if trails_d[current_trail]["form"] == cnt[0]:
+                f.set_active(itr)
+            itr += 1
         desc.set_sensitive(True)
+        desc.set_text(trails_d[current_trail]["desc"])
 
 
     def show_trails(self, parent):
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)
-        self.grid.attach(self.trails_table, 0, 2, 1, 1)
+
+        self.grid.attach(self.scroll_window, 0, 2, 1, 1)
         self.grid.show_all()
 
 
@@ -584,20 +627,19 @@ class Window(Gtk.ApplicationWindow):
             m = str(m)
         y = str(y)
         date = y+'-'+m+'-'+d
-        print(date)
-        #status = self.visit.create_visit(model_trail[t.get_active()][0],
-        #        [
-        #        self.log.get_logged_user(),
-        #        self.log.get_cty(),
-        #        self.log.get_gdr(),
-        #        self.log.get_age(),
-        #        date,
-        #        model_rating[r.get_active()][0],
-        #        ])
-        # pop.add(Gtk.Label(label=status))
-        # pop.show_all()
-        # pop.popup()
-        # self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
+        self.visit.create_visitor(self.model_trail[t.get_active()][0],
+                                        [
+                                        self.log.get_logged_user(),
+                                        self.log.get_cty(),
+                                        self.log.get_gdr(),
+                                        self.log.get_age(),
+                                        date,
+                                        model_rating[r.get_active()][0],
+                                        ])
+        pop.add(Gtk.Label(label="Submitted Successfully!"))
+        pop.show_all()
+        pop.popup()
+        self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
 
 
     def trail_recommendation(self, par, parent):
@@ -626,7 +668,6 @@ class Window(Gtk.ApplicationWindow):
         period_label = Gtk.Label(label="Periodicity:")
         report_grid = Gtk.Grid(halign=3,
                             column_spacing=16,
-                            # column_homogeneous=True,
                             )
         report_grid.attach(trail_label, 0, 0, 1, 1)
         report_grid.attach(period_label, 2, 0, 1, 1)
@@ -643,32 +684,38 @@ class Window(Gtk.ApplicationWindow):
         mode = model_report[m.get_active()][0]
         d = datetime.date.today()
         d = str(d)
-        if mode == "Monthly" or mode == "Season":
+        if mode == "Monthly":
             d = d[:-3]
-        trail = self.model_trail[t.get_active()][0]
-        #get trail info with right date
-        max_rating = Gtk.Label(label="Max Rating")
-        min_rating = Gtk.Label(label="Min Rating")
-        number_visitors = Gtk.Label(label="Number of Visitors")
-        mode_rating = Gtk.Label(label="Rating Mode")
-        max_rating_value = Gtk.Label(label="")
-        min_rating_value = Gtk.Label(label="")
-        number_visitors_value = Gtk.Label(label="")
-        mode_rating_value = Gtk.Label(label="")
+        if mode == "Yearly":
+            d = d[:-6]
+        if mode == "All Time":
+            d = ""
+        report = Report.Report(self.visit.get_report_info(self.model_trail[t.get_active()][0], d))
         report_grid = Gtk.Grid(halign=3,
                             column_spacing=16,
                             margin_bottom=64,
                             )
-        report_grid.attach(max_rating, 0, 0, 1, 1)
-        report_grid.attach(min_rating, 1, 0, 1, 1)
-        report_grid.attach(number_visitors, 2, 0, 1, 1)
-        report_grid.attach(mode_rating, 3, 0, 1, 1)
-        report_grid.attach(max_rating_value, 0, 1, 1, 1)
-        report_grid.attach(min_rating_value, 1, 1, 1, 1)
-        report_grid.attach(number_visitors_value, 2, 1, 1, 1)
-        report_grid.attach(mode_rating_value, 3, 1, 1, 1)
-        while(self.grid.get_child_at(1, 3) != None):
-            self.grid.remove_row(4)
+        if report.get_num_visitas() != 0:
+            max_rating = Gtk.Label(label="Max Rating")
+            min_rating = Gtk.Label(label="Min Rating")
+            number_visitors = Gtk.Label(label="Number of Visitors")
+            mode_rating = Gtk.Label(label="Rating Mode")
+            max_rating_value = Gtk.Label(label=str(report.get_classificacao_max()))
+            min_rating_value = Gtk.Label(label=str(report.get_classificacao_min()))
+            number_visitors_value = Gtk.Label(label=str(report.get_num_visitas()))
+            mode_rating_value = Gtk.Label(label=str(report.get_moda()))
+            report_grid.attach(max_rating, 0, 0, 1, 1)
+            report_grid.attach(min_rating, 1, 0, 1, 1)
+            report_grid.attach(number_visitors, 2, 0, 1, 1)
+            report_grid.attach(mode_rating, 3, 0, 1, 1)
+            report_grid.attach(max_rating_value, 0, 1, 1, 1)
+            report_grid.attach(min_rating_value, 1, 1, 1, 1)
+            report_grid.attach(number_visitors_value, 2, 1, 1, 1)
+            report_grid.attach(mode_rating_value, 3, 1, 1, 1)
+        else:
+            report_grid.attach(Gtk.Label(label="No Ratings..."), 0, 0, 1, 1)
+        while(self.grid.get_child_at(0, 3) != None):
+            self.grid.remove_row(3)
         self.grid.attach(report_grid, 0, 3, 1, 1)
         self.grid.show_all()
 
@@ -795,8 +842,8 @@ class Window(Gtk.ApplicationWindow):
             parent.show_all()
             self.pass_entry.set_text("")
             self.user_entry.set_text("")
-            print(self.log.get_u_pass())
             self.tid = GLib.timeout_add(300, self.loggin_in, parent)
+            self.resize(900, 600)
             if self.log.get_logged_user() == "admin":
                 self.t_admin = GLib.timeout_add(1600, self.admin_win, parent)
             else:

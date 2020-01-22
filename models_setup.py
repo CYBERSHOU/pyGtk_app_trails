@@ -20,7 +20,7 @@ model_extension = Gtk.ListStore(str)
 model_form = Gtk.ListStore(str)
 
 
-for i in ["Daily", "Monthly", "Season"]:
+for i in ["Daily", "Monthly", "Yearly", "All Time"]:
     model_report.append([i])
 
 
