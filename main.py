@@ -441,7 +441,7 @@ class Window(Gtk.ApplicationWindow):
         ext_cbox.add_attribute(cell, "text", 0)
         form_cbox.pack_start(cell, True)
         form_cbox.add_attribute(cell, "text", 0)
-        self.isle_handler_id = isle_cbox.connect("changed", self.change_county_cbox, [county_cbox, isle_cbox])
+        isle_cbox.connect("changed", self.change_county_cbox, [county_cbox, isle_cbox])
         trail_cbox.connect("changed", self.modify_unset_sensitive, [trail_cbox,
                                                                 isle_cbox,
                                                                 county_cbox,
@@ -525,14 +525,11 @@ class Window(Gtk.ApplicationWindow):
         i.set_sensitive(True)
         for cnt in model_isle:
             if trails_d[current_trail]["isle"] == cnt[0]:
-                i.handler_block(self.isle_handler_id)
                 i.set_active(itr)
-                i.handler_unblock(self.isle_handler_id)
             itr += 1
-        self.change_county_cbox(parent, [i, c])
         c.set_sensitive(True)
         itr = 0
-        for cnt in model_county:
+        for cnt in self.model_county:
             if trails_d[current_trail]["county"] == cnt[0]:
                 c.set_active(itr)
             itr += 1
