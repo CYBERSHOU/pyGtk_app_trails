@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+# Author: Isaac Silva
+
 
 class Report:
     def __init__(self, classificacao):
@@ -13,7 +19,7 @@ class Report:
             if self.classificacao_max < i:
                 self.classificacao_max = i
             if self.classificacao_min > i:
-                self.classificacao_min = i 
+                self.classificacao_min = i
 
             #cria um dicionario, as keys sao as classificações, e la dentro a frequencia de cada
             if i in dic_temp:
@@ -42,18 +48,15 @@ class Report:
 
     def get_moda(self):
         return self.moda
-            
-        
-        
 
 
-def main():
-    classificacoes = [1,2,3,1,2,4,2,3,2,3,4]
-    teste = Report(classificacoes)
+# def main():
+#     classificacoes = [1,2,3,1,2,4,2,3,2,3,4]
+#     teste = Report(classificacoes)
 
-    print(teste.get_classificacao_max())
-    print(teste.get_classificacao_min())
-    print(teste.get_num_visitas())
-    print(teste.get_moda())
+#     print(teste.get_classificacao_max())
+#     print(teste.get_classificacao_min())
+#     print(teste.get_num_visitas())
+#     print(teste.get_moda())
 
-main()
+# main()

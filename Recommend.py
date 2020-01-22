@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+# Author: Isaac Silva
+
 
 class Recommend:
     def __init__(self, dic_trilhos, lista_compara):
@@ -50,19 +56,15 @@ class Recommend:
 
         #print(self.jaccard)
 
-        
     def get_rec(self):
         return self.recommend
-                
-        
 
 
-def main():
-    dic = {"trilho1":[["portugal", "17-21", "M"],["portugal", "17-21", "M"],["portugal", "17-21", "M"]], "trilho2":[["portugal", "17-21", "M"],["portugal", "17-21", "M"],["portugal", "17-21", "M"]]}
-    lista = ["portugal", "17-21", "M"]
-    teste = Recommend(dic, lista)
-    print(teste.get_rec())
-    
-    #recomend({trilho1:[[pais, faixa_etaria, genero], [pais, faixa_etaria, genero], ...], trilho2:[[...]...]}, [pais, faixa_etaria, genero])
+#def main():
+#    dic = {"trilho1":[["portugal", "17-21", "M"],["portugal", "17-21", "M"],["portugal", "17-21", "M"]], "trilho2":[["portugal", "17-21", "M"],["portugal", "17-21", "M"],["portugal", "17-21", "M"]]}
+#    lista = ["portugal", "17-21", "M"]
+#    teste = Recommend(dic, lista)
+#    print(teste.get_rec())
+#    #recomend({trilho1:[[pais, faixa_etaria, genero], [pais, faixa_etaria, genero], ...], trilho2:[[...]...]}, [pais, faixa_etaria, genero])
 
-main()
+#main()

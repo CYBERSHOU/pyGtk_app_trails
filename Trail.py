@@ -10,137 +10,45 @@ from trail_dic import *
 
 
 class Trail:
-    def __init__(self, file_path:str,
-                    name=NAME,
-                    isle=ISLE,
-                    county=CNTY,
-                    gps=GPS,
-                    dificulty=DFCT,
-                    extension=EXTN,
-                    format_=FORM,
-                    description=DESC,
-                    ):
+    def __init__(self, file_path:str):
         self.file_path = file_path
-        self.name = name
-        self.isle = isle
-        self.county = county
-        self.gps = gps
-        self.dificulty = dificulty
-        self.extension = extension
-        self.format = format_
-        self.description = description
-        self.d = {}
-        self.set_d()
+        self.trails_d = {}
+        self.set_trails_d()
 
 
-    def get_name(self):
-        return self.name
-
-    def get_isle(self):
-        return self.isle
-
-
-    def get_county(self):
-        return self.county
-
-
-    def get_gps(self):
-        return self.gps
-
-
-    def get_dificulty(self):
-        return self.dificulty
-
-
-    def get_extension(self):
-        return self.extension
-
-
-    def get_format(self):
-        return self.format
-
-
-    def get_description(self):
-        return self.description
-
-
-    def set_name(self, n):
-        self.name = n
-
-
-    def set_isle(self, i):
-        self.isle = i
-
-
-    def set_county(self, c):
-        self.county = c
-
-
-    def set_gps(self, g):
-        self.gps = g
-
-
-    def set_dificulty(self, d):
-        self.dificulty = d
-
-
-    def set_extension(self, e):
-        self.extension = e
-
-
-    def set_format(self, f):
-        self.format = f
-
-
-    def set_description(self, d):
-        self.description = d
-
-
-    def set_d(self, l=0):
-        n = self.name.lower()
-        buf = ""
-        for c in n:
-            if c == ' ':
-                buf += '_'
-            else:
-                buf += c
-        if l == 0:
-            l = [self.name,
-                self.isle,
-                self.county,
-                self.gps,
-                self.dificulty,
-                self.extension,
-                self.format,
-                self.description
-                ]
+    def set_trails_d(self, l:list=None):
+        if l == None:
+            return
         n_d = {}
         for i in range(len(HEADERS)):
             n_d[HEADERS[i]] = l[i]
-        self.d[buf] = n_d
+        self.trails_d[l[0]] = n_d
+        return self.trails_d
 
 
-    def get_trails(self):
-        return self.d
+    def get_trails_d(self):
+        return self.trails_d
 
 
-    def add_file_trail(self, l:list):
+#     def add_file_trail(self, l:list):
+#         try:
+#             f = open(self.file_path, 'a')
+#             for i in l:
+#                 f.write(str(i)+';')
+#             f.write('\n')
+#             f.close()
+#             return 0
+#         except Exception:
+#             return 1
+
+
+    def modify_file_trail(self, l:list):
         try:
+            self.remove_file_trail(l[0])
             f = open(self.file_path, 'a')
             for i in l:
                 f.write(str(i)+';')
-            f.close()
-            return 0
-        except Exception:
-            return 1
-
-
-    def modify_file_trail(self, name:str, l:list):
-        try:
-            self.remove_trail(name)
-            f = open(self.file_path, 'a')
-            for i in l:
-                f.write(str(i)+';')
+            f.write('\n')
             f.close()
             return 0
         except Exception:
@@ -152,9 +60,8 @@ class Trail:
             f = open(self.file_path, 'r')
             l_n = []
             for line in f:
-                if name in line:
-                    continue
-                l_n.append(line)
+                if name not in line:
+                    l_n.append(line)
 
             f = open(self.file_path, 'w')
             for line in l_n:
@@ -167,49 +74,54 @@ class Trail:
 
     def get_file_trails(self):
         try:
-            self.d = {}
+            self.trails_d = {}
             f = open(self.file_path, 'r')
-            l = []
             for line in f:
                 n = ""
+                l = []
+                n_d = {}
                 for c in line:
                     if c == ';':
-                        l += n
+                        l.append(n)
                         n = ""
                     else:
                         n += c
-
-            n_d = {}
-            for i in range(len(HEADER)):
-                n_d[HEADER[i]] = l[i]
-            n = l[0].lower()
-            buf = ""
-            for c in n:
-                if c == ' ':
-                    buf = '_'
-                else:
-                    buf = c
-
-            self.d[buf] = n_d
+                for i in range(len(HEADERS)):
+                    n_d[HEADERS[i]] = l[i]
+                self.trails_d[n_d[HEADERS[0]]] = n_d
             f.close()
-            return self.d
+            return self.trails_d
         except Exception:
             f = open(self.file_path, 'w')
-            for i in HEADERS:
-                f.write(i+';')
             f.close()
-            n_d = {}
-            for i in range(len(HEADERS)):
-                n_d[HEADERS[i]] = COL_HEADER[i]
-            d_header = {"header": HEADERS}
-            return d_header
+            return 1
+
 
     def set_file_trails(self):
         f = open(self.file_path, 'w')
-        for i in self.d:
-            for y in i:
-                f.write(i[y]+';')
+        for i in self.trails_d:
+            for y in self.trails_d[i]:
+                f.write(self.trails_d[i][y]+';')
+            f.write('\n')
         f.close()
+
+
+# def main():
+#     t = Trail("test.txt")
+#     t.get_file_trails()
+#     print("2!:" + str(t.trails_d))
+#     t.set_trails_d(["salto do cabrito", "sta maria", "vila do porto", "44n 32o", "44km", "facil", "linear", "ganda bosta"])
+#     print("3!:"+str(t.trails_d))
+#     t.set_file_trails()
+#     t.modify_file_trail(["lo", "stamaria", "vilado porto", "44n32o", "44k", "fail", "liear", "gandbosta"])
+#     f = open("test.txt", "r")
+#     text = f.read()
+#     print("4!:"+str(text))
+#     f.close()
+#     t.remove_file_trail("salto do cabrito")
+#     print("removing: "+str(t.trails_d))
+
+# main()
 
 
 

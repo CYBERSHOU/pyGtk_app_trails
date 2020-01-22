@@ -11,36 +11,27 @@ from gi.repository import Gtk
 model_country = Gtk.ListStore(str)
 model_age = Gtk.ListStore(str)
 model_gender = Gtk.ListStore(str)
-model_day = Gtk.ListStore(str)
-model_month = Gtk.ListStore(str)
-model_year = Gtk.ListStore(str)
 model_rating = Gtk.ListStore(str)
+model_report = Gtk.ListStore(str)
+model_isle = Gtk.ListStore(str)
+model_county = Gtk.ListStore(str)
+model_dificulty = Gtk.ListStore(str)
+model_extension = Gtk.ListStore(str)
+model_form = Gtk.ListStore(str)
 
-for i in range(1, 6):
+
+for i in ["Daily", "Monthly", "Season"]:
+    model_report.append([i])
+
+
+RATINGS = [1, 2, 3, 4, 5]
+
+
+for i in RATINGS:
     model_rating.append([str(i)])
 
-for i in range(1, 32):
-    if i < 10:
-        model_day.append(["0"+str(i)])
-    else:
-        model_day.append([str(i)])
 
-
-for i in range(1, 12):
-    if i < 10:
-        model_month.append(["0"+str(i)])
-    else:
-        model_month.append([str(i)])
-
-
-for i in range(0, 99):
-    if i < 10:
-        model_year.append(["0"+str(i)])
-    else:
-        model_year.append([str(i)])
-
-
-ages = [
+AGES = [
         "12-18",
         "19-29",
         "30-39",
@@ -50,14 +41,14 @@ ages = [
         ]
 
 
-genders = [
+GENDERS = [
         "Male",
         "Female",
         "Other",
         ]
 
 
-countries = [
+COUNTRIES = [
         "Afghanistan",
         "Albania",
         "Algeria",
@@ -257,16 +248,102 @@ countries = [
         ]
 
 
-for i in countries:
+ISLES = {
+        "St. Maria": 0,
+        "São Miguel": 1,
+        "Terceira": 2,
+        "Graciosa": 3,
+        "São Jorge": 4,
+        "Pico": 5,
+        "Faial": 6,
+        "Flores": 7,
+        "Corvo": 8
+        }
+
+
+COUNTIES = {
+        0: ["Vila do Porto"],
+        1: [
+            "Lagoa",
+            "Nordeste",
+            "Ponta Delgada",
+            "Vila da Povoação",
+            "Ribeira Grande",
+            "Vila Franca do Campo"
+            ],
+        2: [
+            "Angra do Heroísmo",
+            "Praia da Vitória"
+            ],
+        3: ["Santa Cruz da Graciosa"],
+        4: [
+            "Calheta de São Jorge",
+            "Velas"
+            ],
+        5: [
+            "Lajes do Pico",
+            "Madalena",
+            "São Roque do Pico"
+            ],
+        6: ["Horta"],
+        7: [
+            "Lajes das Flores",
+            "Santa Cruz das Flores"
+            ],
+        8: ["Vila do Corvo"]
+        }
+
+
+DIFICULTIES = [
+        "Fácil",
+        "Médio",
+        "Difícil"
+        ]
+
+
+EXTENSIONS = [
+        "<5Km",
+        "5-10Km",
+        "10-15Km",
+        "15-30Km",
+        ">30Km"
+        ]
+
+
+FORMS = ["Circular", "Linear"]
+
+
+for i in COUNTRIES:
     model_country.append([i])
 
 
-for i in ages:
+for i in AGES:
     model_age.append([i])
 
 
-for i in genders:
+for i in GENDERS:
     model_gender.append([i])
+
+
+for i in ISLES:
+    model_isle.append([i])
+
+
+for i in COUNTIES:
+    for y in COUNTIES[i]:
+        model_county.append([y])
+
+
+for i in DIFICULTIES:
+    model_dificulty.append([i])
+
+
+for i in EXTENSIONS:
+    model_extension.append([i])
+
+
+for i in FORMS:
+    model_form.append([i])
 
 
 

@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 
-# Version: 0.9.7
+# Version: 0.9.8
 # Authors: Miguel Seridonio Almeida Fernandes,
-#       Isaac Slva,
+#       Isaac Sousa,
 #       Andre Pacheco
 
 
-# import os
+import datetime
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib
@@ -17,25 +17,28 @@ import sys
 
 import Access
 import Trail
-from models_setup import model_country, model_age, model_gender, model_rating
+import Visit
+import Recommend
+import Report
+from models_setup import model_country, model_age, model_gender, ISLES
+from models_setup import model_rating, model_report, model_isle, model_county
+from models_setup import model_dificulty, model_extension, model_form, COUNTIES
 
 
 ABOUT = """
 License: GPL
-Version: 0.9.2
+Version: 0.9.8
 Author: Miguel Seridoneo
 """
-ACCESS_FILE = "accounts.txt"
-TRAIL_FILE = "trails.txt"
+
+ACCESS_FILE = "files/accounts.txt"
+TRAIL_FILE = "files/trails.txt"
 
 LOGGIN_IN = [
         "Logging in.",
         "Logging in..",
         "Logging in..."
         ]
-
-SHOW_LABEL = ["Show Trails", "Hide Trails"]
-
 
 
 class Window(Gtk.ApplicationWindow):
@@ -101,16 +104,10 @@ class Window(Gtk.ApplicationWindow):
                             margin_bottom=64,
                             )
 
-        self.trail = Trail.Trail(TRAIL_FILE)
-        trail_rows = self.trail.get_trails()
-
-        r = 0
-        for i in trail_rows:
-            c = 0
-            for n in trail_rows[i]:
-                self.trails_table.attach(Gtk.Label(label=trail_rows[i][n]), c, r, 1, 1)
-                c += 1
-            r += 1
+        self.update_model_trail()
+        self.model_county = model_county
+        self.log = Access.Access(ACCESS_FILE)
+        self.visit = Visit.Visit()
 
         self.login_b = Gtk.Button(label="Login", hexpand=True, halign=3, margin_bottom=64)
         self.login_b.connect("clicked", self.login)
@@ -135,7 +132,6 @@ class Window(Gtk.ApplicationWindow):
         self.grid.attach(self.grid2, 0, 1, 1, 1)
         self.grid.attach(self.login_grid, 0, 2, 1, 1)
 
-        self.log = Access.Access(ACCESS_FILE)
         self.add(self.grid)
 
     def main_menu(self, parent):
@@ -161,8 +157,8 @@ class Window(Gtk.ApplicationWindow):
         u_show_button.connect("clicked", self.show_trails)
         u_experience_button = Gtk.Button(label="Trail Experience")
         u_experience_button.connect("clicked", self.trail_experience_input, u_show_button)
-        u_recomendation_button = Gtk.Button(label="Trail Recomendation")
-        u_recomendation_button.connect("clicked", self.trail_recomendation, u_show_button)
+        u_recomendation_button = Gtk.Button(label="Trail Recommendation")
+        u_recomendation_button.connect("clicked", self.trail_recommendation, u_show_button)
         u_report_button = Gtk.Button(label="Trails Report")
         u_report_button.connect("clicked", self.trail_report, u_show_button)
         u_back_button = Gtk.Button(label="Logout", halign=3)
@@ -186,14 +182,25 @@ class Window(Gtk.ApplicationWindow):
     def admin_win(self, parent):
         admin_menu = Gtk.Grid(row_spacing=16,
                             halign=3,
-                            row_homogeneous=True,
-                            column_homogeneous=True,
                             )
-        a_manage_button = Gtk.Button(label="Manage Trails")
-        a_manage_button.connect("clicked", self.manage_trails_menu)
-        a_back_button = Gtk.Button(label="Logout")
+        manage_grid = Gtk.Grid(halign=3,
+                            column_spacing=16,
+                            )
+        add_button = Gtk.Button(label="Add Trail")
+        add_button.connect("clicked", self.add_trail)
+        remove_button = Gtk.Button(label="Remove Trail")
+        remove_button.connect("clicked", self.remove_trail)
+        modify_button = Gtk.Button(label="Modify Trail")
+        modify_button.connect("clicked", self.modify_trail)
+        show_button = Gtk.Button(label="Show Trails")
+        show_button.connect("clicked", self.show_trails)
+        manage_grid.attach(add_button, 0, 0, 1, 1)
+        manage_grid.attach(remove_button, 1, 0, 1, 1)
+        manage_grid.attach(modify_button, 2, 0, 1, 1)
+        manage_grid.attach(show_button, 3, 0, 1, 1)
+        a_back_button = Gtk.Button(label="Logout", halign=3)
         a_back_button.connect("clicked", self.main_menu)
-        admin_menu.attach(a_manage_button, 0, 0, 1, 1)
+        admin_menu.attach(manage_grid, 0, 0, 1, 1)
         admin_menu.attach(a_back_button, 0, 1, 1, 1)
         self.grid.remove(self.l)
         self.grid.attach(admin_menu, 0, 1, 1, 1)
@@ -202,23 +209,323 @@ class Window(Gtk.ApplicationWindow):
         return False
 
 
-    def manage_trails_menu(self, parent):
-        pass
+    def add_trail(self, parent):
+        while(self.grid.get_child_at(0, 2) != None):
+            self.grid.remove_row(2)
+        holder_grid = Gtk.Grid(halign=3,
+                        row_spacing=16,
+                        margin_bottom=64,
+                        margin_right=64,
+                        margin_left=64,
+                        )
+        add_grid = Gtk.Grid(halign=3,
+                        column_spacing=16,
+                        row_spacing=16,
+                        )
+        add_title = Gtk.Label(label="Add Trail")
+        # self.model_county = model_county
+        trail_label = Gtk.Label(label="Trail:", halign=2)
+        trail_entry = Gtk.Entry(max_length=32, placeholder_text="Trail's Name")
+        isle_label = Gtk.Label(label="Isle:", halign=2)
+        isle_cbox = Gtk.ComboBox.new_with_model(model_isle)
+        county_label = Gtk.Label(label="County:", halign=2)
+        county_cbox = Gtk.ComboBox.new_with_model(self.model_county)
+        gps_label = Gtk.Label(label="GPS:", halign=2)
+        gps_entry = Gtk.Entry(placeholder_text="Coordenates",
+                            max_length=16,
+                            )
+        dfct_label = Gtk.Label(label="Dificulty:", halign=2)
+        dfct_cbox = Gtk.ComboBox.new_with_model(model_dificulty)
+        ext_label = Gtk.Label(label="Extension:", halign=2)
+        ext_cbox = Gtk.ComboBox.new_with_model(model_extension)
+        form_label = Gtk.Label(label="Form:", halign=2)
+        form_cbox = Gtk.ComboBox.new_with_model(model_form)
+        desc_label = Gtk.Label(label="Description:", halign=2)
+        desc_entry = Gtk.Entry(max_length=64, placeholder_text="Brief Description")
+        cell = Gtk.CellRendererText()
+        isle_cbox.pack_start(cell, True)
+        isle_cbox.add_attribute(cell, "text", 0)
+        county_cbox.pack_start(cell, True)
+        county_cbox.add_attribute(cell, "text", 0)
+        dfct_cbox.pack_start(cell, True)
+        dfct_cbox.add_attribute(cell, "text", 0)
+        ext_cbox.pack_start(cell, True)
+        ext_cbox.add_attribute(cell, "text", 0)
+        form_cbox.pack_start(cell, True)
+        form_cbox.add_attribute(cell, "text", 0)
+        isle_cbox.connect("changed", self.change_county_cbox, [county_cbox, isle_cbox])
+        add_grid.attach(trail_label, 0, 0, 1, 1)
+        add_grid.attach(trail_entry, 1, 0, 1, 1)
+        add_grid.attach(isle_label, 0, 1, 1, 1)
+        add_grid.attach(isle_cbox, 1, 1, 1, 1)
+        add_grid.attach(county_label, 2, 1, 1, 1)
+        add_grid.attach(county_cbox, 3, 1, 1, 1)
+        add_grid.attach(gps_label, 2, 0, 1, 1)
+        add_grid.attach(gps_entry, 3, 0, 1, 1)
+        add_grid.attach(dfct_label, 4, 1, 1, 1)
+        add_grid.attach(dfct_cbox, 5, 1, 1, 1)
+        add_grid.attach(ext_label, 0, 2, 1, 1)
+        add_grid.attach(ext_cbox, 1, 2, 1, 1)
+        add_grid.attach(form_label, 2, 2, 1, 1)
+        add_grid.attach(form_cbox, 3, 2, 1, 1)
+        add_grid.attach(desc_label, 4, 0, 1, 1)
+        add_grid.attach(desc_entry, 5, 0, 1, 1)
+        submit_button = Gtk.Button(label="Submit", halign=3)
+        submit_button.connect("clicked", self.submit_add_trail, [trail_entry,
+                                                                isle_cbox,
+                                                                county_cbox,
+                                                                gps_entry,
+                                                                dfct_cbox,
+                                                                ext_cbox,
+                                                                form_cbox,
+                                                                desc_entry
+                                                                ])
+        holder_grid.attach(add_title, 0, 0, 1, 1)
+        holder_grid.attach(add_grid, 0, 1, 1, 1)
+        holder_grid.attach(submit_button, 0, 2, 1, 1)
+        self.grid.attach(holder_grid, 0, 2, 1, 1)
+        self.grid.show_all()
+
+
+    def submit_add_trail(self, parent, w:list):
+        t, i, c, g  = w[0], w[1], w[2], w[3]
+        df, e, f, desc = w[4], w[5], w[6], w[7]
+        pop = Gtk.Popover.new(parent)
+        if(i.get_active() == -1 or c.get_active() == -1 or
+                df.get_active() == -1 or e.get_active() == -1 or
+                f.get_active() == -1 or t.get_text() == "" or
+                g.get_text() == "" or desc.get_text() == ""):
+            pop.add(Gtk.Label(label="Fill all parameters!"))
+            pop.show_all()
+            pop.popup()
+            self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
+            return
+        self.trail.modify_file_trail([t.get_text(),
+                            model_isle[i.get_active()][0],
+                            self.model_county[c.get_active()][0],
+                            g.get_text(),
+                            model_dificulty[df.get_active()][0],
+                            model_extension[e.get_active()][0],
+                            model_form[f.get_active()][0],
+                            desc.get_text()
+                            ])
+        self.update_model_trail()
+        t.set_text("")
+        i.set_active(-1)
+        c.set_active(-1)
+        g.set_text("")
+        df.set_active(-1)
+        e.set_active(-1)
+        f.set_active(-1)
+        desc.set_text("")
+        pop.add(Gtk.Label(label="Submit Successfully!"))
+        pop.show_all()
+        pop.popup()
+        self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
+
+
+    def change_county_cbox(self, parent, widgets):
+        c, i = widgets[0], widgets[1]
+        i = model_isle[i.get_active()][0]
+        l = COUNTIES[ISLES[i]]
+        self.model_county = Gtk.ListStore(str)
+        for i in l:
+            self.model_county.append([i])
+        c.set_model(self.model_county)
+        c.set_active(-1)
+
+
+    def remove_trail(self, parent):
+        while(self.grid.get_child_at(0, 2) != None):
+            self.grid.remove_row(2)
+        holder_grid = Gtk.Grid(halign=3,
+                        row_spacing=16,
+                        margin_bottom=64,
+                        margin_right=64,
+                        margin_left=64,
+                        )
+        remove_grid = Gtk.Grid(halign=3,
+                        column_spacing=16,
+                        row_spacing=16,
+                        )
+        remove_title = Gtk.Label(label="Remove Trail")
+        trail_label = Gtk.Label(label="Trail:", halign=2)
+        trail_cbox = Gtk.ComboBox.new_with_model(self.model_trail)
+        cell = Gtk.CellRendererText()
+        trail_cbox.pack_start(cell, True)
+        trail_cbox.add_attribute(cell, "text", 0)
+        submit_b = Gtk.Button(label="Submit")
+        submit_b.connect("clicked", self.submit_remove_trail, trail_cbox)
+        remove_grid.attach(trail_label, 0, 0, 1, 1)
+        remove_grid.attach(trail_cbox, 1, 0, 1, 1)
+        holder_grid.attach(remove_title, 0, 0, 1, 1)
+        holder_grid.attach(remove_grid, 0, 1, 1, 1)
+        holder_grid.attach(submit_b, 0, 2, 1, 1)
+        self.grid.attach(holder_grid, 0, 2, 1, 1)
+        self.grid.show_all()
+
+
+    def submit_remove_trail(self, parent, t):
+        pop = Gtk.Popover.new(parent)
+        if self.model_trail[t.get_active()][0] == -1:
+            pop.add(Gtk.Label(label="Please choose a Trail!"))
+            pop.show_all()
+            pop.popup()
+            self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
+            return
+        self.trail.remove_file_trail(self.model_trail[t.get_active()][0])
+        self.update_model_trail()
+        t.set_model(self.model_trail)
+        pop.add(Gtk.Label(label="Submitted Successfully!"))
+        pop.show_all()
+        pop.popup()
+        self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
+
+    def modify_trail(self, parent):
+        while(self.grid.get_child_at(0, 2) != None):
+            self.grid.remove_row(2)
+        holder_grid = Gtk.Grid(halign=3,
+                        row_spacing=16,
+                        margin_bottom=64,
+                        margin_right=64,
+                        margin_left=64,
+                        )
+        modify_grid = Gtk.Grid(halign=3,
+                        column_spacing=16,
+                        row_spacing=16,
+                        )
+        modify_title = Gtk.Label(label="Modify Trail")
+        trail_label = Gtk.Label(label="Trail:", halign=2)
+        trail_cbox = Gtk.ComboBox.new_with_model(self.model_trail)
+        isle_label = Gtk.Label(label="Isle:", halign=2)
+        isle_cbox = Gtk.ComboBox.new_with_model(model_isle)
+        isle_cbox.set_sensitive(False)
+        county_label = Gtk.Label(label="County:", halign=2)
+        county_cbox = Gtk.ComboBox.new_with_model(self.model_county)
+        county_cbox.set_sensitive(False)
+        gps_label = Gtk.Label(label="GPS:", halign=2)
+        gps_entry = Gtk.Entry(placeholder_text="Coordenates",
+                            max_length=16,
+                            sensitive=False
+                            )
+        dfct_label = Gtk.Label(label="Dificulty:", halign=2)
+        dfct_cbox = Gtk.ComboBox.new_with_model(model_dificulty)
+        dfct_cbox.set_sensitive(False)
+        ext_label = Gtk.Label(label="Extension:", halign=2)
+        ext_cbox = Gtk.ComboBox.new_with_model(model_extension)
+        ext_cbox.set_sensitive(False)
+        form_label = Gtk.Label(label="Form:", halign=2)
+        form_cbox = Gtk.ComboBox.new_with_model(model_form)
+        form_cbox.set_sensitive(False)
+        desc_label = Gtk.Label(label="Description:", halign=2)
+        desc_entry = Gtk.Entry(max_length=64, sensitive=False)
+        cell = Gtk.CellRendererText()
+        trail_cbox.pack_start(cell, True)
+        trail_cbox.add_attribute(cell, "text", 0)
+        isle_cbox.pack_start(cell, True)
+        isle_cbox.add_attribute(cell, "text", 0)
+        county_cbox.pack_start(cell, True)
+        county_cbox.add_attribute(cell, "text", 0)
+        dfct_cbox.pack_start(cell, True)
+        dfct_cbox.add_attribute(cell, "text", 0)
+        ext_cbox.pack_start(cell, True)
+        ext_cbox.add_attribute(cell, "text", 0)
+        form_cbox.pack_start(cell, True)
+        form_cbox.add_attribute(cell, "text", 0)
+        isle_cbox.connect("changed", self.change_county_cbox, [county_cbox, isle_cbox])
+        trail_cbox.connect("changed", self.modify_unset_sensitive, [trail_cbox,
+                                                                isle_cbox,
+                                                                county_cbox,
+                                                                gps_entry,
+                                                                dfct_cbox,
+                                                                ext_cbox,
+                                                                form_cbox,
+                                                                desc_entry
+                                                                ])
+        modify_grid.attach(trail_label, 0, 0, 1, 1)
+        modify_grid.attach(trail_cbox, 1, 0, 1, 1)
+        modify_grid.attach(isle_label, 0, 1, 1, 1)
+        modify_grid.attach(isle_cbox, 1, 1, 1, 1)
+        modify_grid.attach(county_label, 2, 1, 1, 1)
+        modify_grid.attach(county_cbox, 3, 1, 1, 1)
+        modify_grid.attach(gps_label, 2, 0, 1, 1)
+        modify_grid.attach(gps_entry, 3, 0, 1, 1)
+        modify_grid.attach(dfct_label, 4, 1, 1, 1)
+        modify_grid.attach(dfct_cbox, 5, 1, 1, 1)
+        modify_grid.attach(ext_label, 0, 2, 1, 1)
+        modify_grid.attach(ext_cbox, 1, 2, 1, 1)
+        modify_grid.attach(form_label, 2, 2, 1, 1)
+        modify_grid.attach(form_cbox, 3, 2, 1, 1)
+        modify_grid.attach(desc_label, 4, 0, 1, 1)
+        modify_grid.attach(desc_entry, 5, 0, 1, 1)
+        submit_button = Gtk.Button(label="Submit", halign=3)
+        submit_button.connect("clicked", self.submit_modify_trail, [trail_cbox,
+                                                                isle_cbox,
+                                                                county_cbox,
+                                                                gps_entry,
+                                                                dfct_cbox,
+                                                                ext_cbox,
+                                                                form_cbox,
+                                                                desc_entry
+                                                                ])
+        holder_grid.attach(modify_title, 0, 0, 1, 1)
+        holder_grid.attach(modify_grid, 0, 1, 1, 1)
+        holder_grid.attach(submit_button, 0, 2, 1, 1)
+        self.grid.attach(holder_grid, 0, 2, 1, 1)
+        self.grid.show_all()
+
+
+    def submit_modify_trail(self, parent, w:list):
+        t, i, c, g  = w[0], w[1], w[2], w[3]
+        df, e, f, desc = w[4], w[5], w[6], w[7]
+        pop = Gtk.Popover.new(parent)
+        if(i.get_active() == -1 or c.get_active() == -1 or
+                df.get_active() == -1 or e.get_active() == -1 or
+                f.get_active() == -1 or t.get_active() == -1 or
+                g.get_text() == "" or desc.get_text() == ""):
+            pop.add(Gtk.Label(label="Fill all parameters."))
+            pop.show_all()
+            pop.popup()
+            self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
+            return
+        self.trail.modify_file_trail([self.model_trail[t.get_active()][0],
+                            model_isle[i.get_active()][0],
+                            self.model_county[c.get_active()][0],
+                            g.get_text(),
+                            model_dificulty[df.get_active()][0],
+                            model_extension[e.get_active()][0],
+                            model_form[f.get_active()][0],
+                            desc.get_text()
+                            ])
+        self.update_model_trail()
+        pop.add(Gtk.Label(label="Submitted Successfully!"))
+        pop.show_all()
+        pop.popup()
+        self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
+
+
+    def modify_unset_sensitive(self, parent, w:list):
+        t, i, c, g  = w[0], w[1], w[2], w[3]
+        df, e, f, desc = w[4], w[5], w[6], w[7]
+        if t.get_active() == -1:
+            return
+        i.set_sensitive(True)
+        c.set_sensitive(True)
+        g.set_sensitive(True)
+        df.set_sensitive(True)
+        e.set_sensitive(True)
+        f.set_sensitive(True)
+        desc.set_sensitive(True)
 
 
     def show_trails(self, parent):
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)
-        if parent.props.label == SHOW_LABEL[0]:
-            self.grid.attach(self.trails_table, 0, 2, 1, 1)
-            parent.set_label(SHOW_LABEL[1])
-            self.grid.show_all()
-        else:
-            parent.set_label(SHOW_LABEL[0])
+        self.grid.attach(self.trails_table, 0, 2, 1, 1)
+        self.grid.show_all()
 
 
     def trail_experience_input(self, par, parent):
-        parent.set_label(SHOW_LABEL[0])
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)
 
@@ -231,13 +538,8 @@ class Window(Gtk.ApplicationWindow):
                                 margin_right=6,
                                 margin_left=10,
                                 )
-        #model_trail
-        model_trail = Gtk.ListStore(str)
-        d = self.trail.get_trails()
-        for i in d:
-            model_trail.append([i])
 
-        trail = Gtk.ComboBox.new_with_model(model_trail)
+        trail = Gtk.ComboBox.new_with_model(self.model_trail)
         trail.pack_start(cell, True)
         trail.add_attribute(cell, "text", 0)
         trail_label = Gtk.Label(label="Trail:",
@@ -263,8 +565,7 @@ class Window(Gtk.ApplicationWindow):
 
     def submit_trail_experience(self, parent, widgets:list):
         t, r, c = widgets[0], widgets[1], widgets[2]
-        pop = Gtk.Popover()
-        pop.set_relative_to(parent)
+        pop = Gtk.Popover.new(parent)
         if t.get_active() == -1 or r.get_active() == -1:
             pop.add(Gtk.Label(label="Fill all parameters."))
             pop.show_all()
@@ -282,7 +583,7 @@ class Window(Gtk.ApplicationWindow):
         else:
             m = str(m)
         y = str(y)
-        date = d+'/'+m+'/'+y
+        date = y+'-'+m+'-'+d
         print(date)
         #status = self.visit.create_visit(model_trail[t.get_active()][0],
         #        [
@@ -299,21 +600,77 @@ class Window(Gtk.ApplicationWindow):
         # self.t_pop = GLib.timeout_add(3000, self.pop_down, pop)
 
 
-    def trail_recomendation(self, par, parent):
-        parent.set_label(SHOW_LABEL[0])
+    def trail_recommendation(self, par, parent):
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)
-        rec = Recomend.Recomend()
-        t = rec.get_rec()
-        new_recomendation = Gtk.Label(label=t)
-        self.grid.attach(new_recomendation, 0, 2, 1, 1)
+        user_att = [self.log.get_cty(), self.log.get_gdr(), self.log.get_age()]
+        rec = Recommend.Recommend(self.visit.get_rec_info(), user_att)
+        new_recommendation = Gtk.Label(label="We recommend this trail: "+rec.get_rec())
+        self.grid.attach(new_recommendation, 0, 2, 1, 1)
+        self.grid.show_all()
 
 
     def trail_report(self, par, parent):
-        parent.set_label(SHOW_LABEL[0])
         while(self.grid.get_child_at(0, 2) != None):
             self.grid.remove_row(2)
-        trail_cb = Gtk.ComboBox.new_with_model(model_trail)
+        trail_cb = Gtk.ComboBox.new_with_model(self.model_trail)
+        mode_cb = Gtk.ComboBox.new_with_model(model_report)
+        cell = Gtk.CellRendererText()
+        trail_cb.pack_start(cell, True)
+        trail_cb.add_attribute(cell, "text", 0)
+        mode_cb.pack_start(cell, True)
+        mode_cb.add_attribute(cell, "text", 0)
+        trail_cb.connect("changed", self.change_report, [trail_cb, mode_cb])
+        mode_cb.connect("changed", self.change_report, [trail_cb, mode_cb])
+        trail_label = Gtk.Label(label="Trail:")
+        period_label = Gtk.Label(label="Periodicity:")
+        report_grid = Gtk.Grid(halign=3,
+                            column_spacing=16,
+                            # column_homogeneous=True,
+                            )
+        report_grid.attach(trail_label, 0, 0, 1, 1)
+        report_grid.attach(period_label, 2, 0, 1, 1)
+        report_grid.attach(trail_cb, 1, 0, 1, 1)
+        report_grid.attach(mode_cb, 3, 0, 1, 1)
+        self.grid.attach(report_grid, 0, 2, 1, 1)
+        self.grid.show_all()
+
+
+    def change_report(self, par, widgets:list):
+        t, m = widgets[0], widgets[1]
+        if t.get_active() == -1 or m.get_active() == -1:
+            return
+        mode = model_report[m.get_active()][0]
+        d = datetime.date.today()
+        d = str(d)
+        if mode == "Monthly" or mode == "Season":
+            d = d[:-3]
+        trail = self.model_trail[t.get_active()][0]
+        #get trail info with right date
+        max_rating = Gtk.Label(label="Max Rating")
+        min_rating = Gtk.Label(label="Min Rating")
+        number_visitors = Gtk.Label(label="Number of Visitors")
+        mode_rating = Gtk.Label(label="Rating Mode")
+        max_rating_value = Gtk.Label(label="")
+        min_rating_value = Gtk.Label(label="")
+        number_visitors_value = Gtk.Label(label="")
+        mode_rating_value = Gtk.Label(label="")
+        report_grid = Gtk.Grid(halign=3,
+                            column_spacing=16,
+                            margin_bottom=64,
+                            )
+        report_grid.attach(max_rating, 0, 0, 1, 1)
+        report_grid.attach(min_rating, 1, 0, 1, 1)
+        report_grid.attach(number_visitors, 2, 0, 1, 1)
+        report_grid.attach(mode_rating, 3, 0, 1, 1)
+        report_grid.attach(max_rating_value, 0, 1, 1, 1)
+        report_grid.attach(min_rating_value, 1, 1, 1, 1)
+        report_grid.attach(number_visitors_value, 2, 1, 1, 1)
+        report_grid.attach(mode_rating_value, 3, 1, 1, 1)
+        while(self.grid.get_child_at(1, 3) != None):
+            self.grid.remove_row(4)
+        self.grid.attach(report_grid, 0, 3, 1, 1)
+        self.grid.show_all()
 
 
     def create_acc(self, parent):
@@ -398,8 +755,7 @@ class Window(Gtk.ApplicationWindow):
 
     def submit_acc(self, parent, widgets:list):
         u, p, ck_p, c, g, a = widgets[0], widgets[1], widgets[2], widgets[3], widgets[4], widgets[5]
-        pop = Gtk.Popover()
-        pop.set_relative_to(parent)
+        pop = Gtk.Popover.new(parent)
         if c.get_active() == -1 or g.get_active() == -1 or a.get_active() == -1:
             pop.add(Gtk.Label(label="Fill all parameters."))
             pop.show_all()
@@ -473,6 +829,27 @@ class Window(Gtk.ApplicationWindow):
 
     def pop_down(self, parent):
         parent.popdown()
+
+
+    def update_model_trail(self):
+        self.trail = Trail.Trail(TRAIL_FILE)
+        trail_rows = self.trail.get_file_trails()
+        order_i = sorted(trail_rows)
+        while(self.trails_table.get_child_at(0, 0) != None):
+            self.trails_table.remove_row(0)
+        r = 0
+        for i in order_i:
+            c = 0
+            for n in trail_rows[i]:
+                self.trails_table.attach(Gtk.Label(label=trail_rows[i][n]), c, r, 1, 1)
+                c += 1
+            r += 1
+
+        self.model_trail = Gtk.ListStore(str)
+        for i in order_i:
+            if i != 'Name':
+                self.model_trail.append([i])
+
 
 
     def quit_app(self, parent):
