@@ -80,8 +80,11 @@ class Trail:
             return self.trails_d
         except Exception:
             f = open(self.file_path, 'w')
+            for i in range(len(COL_HEADER)):
+                f.write(COL_HEADER[i]+';')
+            f.write('\n')
             f.close()
-            return 1
+            return self.get_file_trails()
 
 
     def set_file_trails(self):
